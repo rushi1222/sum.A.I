@@ -14,8 +14,6 @@ text_buffer = []
 recording_active = False
 client = None
 
-
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -23,6 +21,14 @@ def index():
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
     global recording_active, client, text_buffer
+    
+    # Remove summary.docx if it exists
+    if os.path.exists("summary.docx"):
+        try:
+            os.remove("summary.docx")
+            print("Existing summary.docx file removed.")
+        except OSError as e:
+            print(f"Error removing summary.docx: {e}")
     
     if not recording_active:
         # Clear the output.txt file before starting recording
@@ -50,7 +56,7 @@ def stop_recording():
 
 @app.route('/check_summary', methods=['GET'])
 def check_summary():
-    if os.path.exists("summary.docx"):
+    if os.path.exists("summary.docx") and os.path.getsize("summary.docx") > 0:
         return jsonify({"ready": True})
     else:
         return jsonify({"ready": False})
@@ -90,6 +96,11 @@ def record_and_summarize():
     if text_buffer:
         output_text_buffer(text_buffer)
     
+    # Check if the output.txt file is empty
+    if os.path.getsize("output.txt") == 0:
+        print("No text recorded. Skipping summarization.")
+        return
+
     # Read text file
     conversation_text = read_text_file("output.txt")
 
